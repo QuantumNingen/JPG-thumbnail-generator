@@ -1,14 +1,15 @@
-import os
-import cv2
-import piexif
-import numpy as np
 import io
-import tkinter as tk
-from tkinter import filedialog, messagebox
-import threading
-import queue
 import multiprocessing
+import os
+import queue
+import threading
 import time
+import tkinter as tk
+from tkinter import filedialog
+
+import cv2
+import numpy as np
+import piexif
 
 
 # ==============================================================================
@@ -34,17 +35,17 @@ def process_single_file(args):
 
         img = cv2.imdecode(np.frombuffer(original_bytes, np.uint8), cv2.IMREAD_COLOR)
         if img is None:
-            return ("FAILURE", f"失败 (无法解码): {filename}")
+            return "FAILURE", f"失败 (无法解码): {filename}"
 
-        TARGET_WIDTH, TARGET_HEIGHT = 160, 120
+        target_width, target_height = 160, 120
         original_height, original_width = img.shape[:2]
-        ratio = min(TARGET_WIDTH / original_width, TARGET_HEIGHT / original_height)
+        ratio = min(target_width / original_width, target_height / original_height)
         new_width, new_height = int(original_width * ratio), int(original_height * ratio)
         thumb = cv2.resize(img, (new_width, new_height), interpolation=cv2.INTER_AREA)
 
         success, thumb_buf = cv2.imencode(".jpg", thumb)
         if not success:
-            return ("FAILURE", f"失败 (编码缩略图失败): {filename}")
+            return "FAILURE", f"失败 (编码缩略图失败): {filename}"
 
         if "0th" not in exif_dict:
             exif_dict["0th"] = {}
@@ -70,7 +71,7 @@ def process_single_file(args):
 
         if os.path.exists(output_path):
             if conflict_resolution == "skip":
-                return ("SKIPPED_EXISTS", f"已跳过 (文件已存在): {new_filename}")
+                return "SKIPPED_EXISTS", f"已跳过 (文件已存在): {new_filename}"
             elif conflict_resolution == "rename":
                 name_part, ext_part = os.path.splitext(output_path)
                 counter = 2
@@ -84,10 +85,10 @@ def process_single_file(args):
         with open(output_path, 'wb') as f:
             f.write(output_bytes)
 
-        return ("SUCCESS", f"已处理: {filename} -> {os.path.basename(output_path)}")
+        return "SUCCESS", f"已处理: {filename} -> {os.path.basename(output_path)}"
 
     except Exception as e:
-        return ("FAILURE", f"失败: {filename} ({e})")
+        return "FAILURE", f"失败: {filename} ({e})"
 
 
 # ==============================================================================
@@ -192,8 +193,8 @@ class App:
 
         start_time = time.monotonic()
         self.start_button.config(state="disabled", text="正在扫描文件...")
-        self.status_text.config(state="normal");
-        self.status_text.delete(1.0, tk.END);
+        self.status_text.config(state="normal")
+        self.status_text.delete(1.0, tk.END)
         self.status_text.config(state="disabled")
 
         tasks = []
